@@ -1,0 +1,24 @@
+services:
+  mongodb:
+    image: mongo:5.0.15 # Sử dụng phiên bản MongoDB 5.0.15
+    container_name: mongodb-container
+    restart: always
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+    volumes:
+      - mongodb_data:/data/db # Lưu trữ dữ liệu MongoDB
+
+volumes:
+  mongodb_data:
+    driver: local # Volume sẽ được lưu trong hệ thống Docker
+
+#connection string: mongodb://admin:admin123@localhost:27017/admin
+
+# chạy docker: docker compose up -d
+# kiểm tra docker có chạy không: docker ps
+# kết nối với mongodb: docker exec -it mongodb-container mongosh -u admin -p admin123
+# xóa sạch dữ liệu: docker volume rm mongodb_data
+
