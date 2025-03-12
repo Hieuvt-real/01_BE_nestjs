@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './schemas/user.schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { hashPasswordHelpers } from 'src/helpers/util';
 import aqp from 'api-query-params';
 
@@ -62,11 +62,24 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async findByEmail(email: string) {
+    return await this.userModel.findOne({ email });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async update(updateUserDto: UpdateUserDto) {
+    return await this.userModel.updateOne(
+      { _id: updateUserDto },
+      { ...updateUserDto },
+    );
+  }
+
+  remove(_id: string) {
+    //check _id
+    if (mongoose.isValidObjectId(_id)) {
+      //delete
+      return this.userModel.deleteOne({ _id });
+    } else {
+      throw new BadRequestException('id không đúng định dạng mongoDB');
+    }
   }
 }
