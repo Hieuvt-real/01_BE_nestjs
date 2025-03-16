@@ -6,7 +6,7 @@ import { User } from './schemas/user.schema';
 import mongoose, { Model } from 'mongoose';
 import { hashPasswordHelpers } from 'src/helpers/util';
 import aqp from 'api-query-params';
-import { CreateAuthDto } from 'src/auth/dto/create-auth.dto';
+import { CodeAuthDto, CreateAuthDto } from 'src/auth/dto/create-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -107,11 +107,12 @@ export class UsersService {
       password: hashPassword,
       isActive: false,
       codeId: codeId,
-      codeExpried: dayjs().add(30, 'seconds'),
+      codeExpried: dayjs().add(5, 'minute'),
     });
     // send email verify
     void this.mailerService.sendMail({
-      to: user.email, // list of receivers
+      // to: user.email, // list of receivers
+      to: 'vu.hieu22102001@gmail.com', //mail to debug code email
       subject: 'Activate your account ✔', // Subject line
       text: 'welcome', // plaintext body
       template: 'register.hbs',
@@ -124,5 +125,33 @@ export class UsersService {
     return {
       _id: user._id,
     };
+  }
+
+  async handleActive(data: CodeAuthDto) {
+    const user = await this.userModel.findOne({
+      _id: data._id,
+      codeId: data.code,
+    });
+
+    if (!user) {
+      throw new BadRequestException('mã code không hợp lệ hoặc đã hết hạn');
+    }
+
+    // check expried code
+    const isBeforeCheck = dayjs().isBefore(dayjs(user.codeExpried));
+
+    if (isBeforeCheck) {
+      // valid => update isActive account
+
+      await this.userModel.updateOne(
+        {
+          _id: data._id,
+        },
+        { isActive: true },
+      );
+      return isBeforeCheck;
+    } else {
+      throw new BadRequestException('mã code đã hết hạn');
+    }
   }
 }

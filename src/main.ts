@@ -15,6 +15,13 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api/v1', { exclude: [''] });
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+
+  app.enableCors({
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
   await app.listen(port);
 }
 void bootstrap();

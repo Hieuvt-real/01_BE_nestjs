@@ -11,7 +11,7 @@ import {
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './passport/local-auth.guard';
 import { Public } from 'src/decorator/customize';
-import { CreateAuthDto } from './dto/create-auth.dto';
+import { CodeAuthDto, CreateAuthDto } from './dto/create-auth.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 
 @Controller('auth')
@@ -33,6 +33,12 @@ export class AuthController {
   @Public()
   handleRegister(@Body() registDto: CreateAuthDto) {
     return this.authService.register(registDto);
+  }
+
+  @Post('check-code')
+  @Public()
+  checkCode(@Body() codeAuthDto: CodeAuthDto) {
+    return this.authService.checkCode(codeAuthDto);
   }
 
   @Get('mail')
