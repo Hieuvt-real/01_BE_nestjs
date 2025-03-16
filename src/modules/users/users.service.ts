@@ -110,7 +110,7 @@ export class UsersService {
       codeExpried: dayjs().add(5, 'minute'),
     });
     // send email verify
-    void this.mailerService.sendMail({
+    await this.mailerService.sendMail({
       // to: user.email, // list of receivers
       to: 'vu.hieu22102001@gmail.com', //mail to debug code email
       subject: 'Activate your account ✔', // Subject line
@@ -153,5 +153,36 @@ export class UsersService {
     } else {
       throw new BadRequestException('mã code đã hết hạn');
     }
+  }
+
+  async handleRetryActive(email: string) {
+    const user = await this.userModel.findOne({ email });
+    const codeId = uuidv4();
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại');
+    }
+
+    if (user.isActive) {
+      throw new BadRequestException('Email đã được kích hoạt');
+    }
+
+    await user.updateOne({
+      codeId: codeId,
+      codeExpried: dayjs().add(5, 'minute'),
+    });
+
+    //send email
+    await this.mailerService.sendMail({
+      // to: user.email, // list of receivers
+      to: 'vu.hieu22102001@gmail.com', //mail to debug code email
+      subject: 'Activate your account ✔', // Subject line
+      text: 'welcome', // plaintext body
+      template: 'register.hbs',
+      context: {
+        name: user.name ?? user.email,
+        activationCode: codeId,
+      },
+    });
+    return { _id: user._id };
   }
 }
