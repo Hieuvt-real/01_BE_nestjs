@@ -6,7 +6,11 @@ import { User } from './schemas/user.schema';
 import mongoose, { Model } from 'mongoose';
 import { hashPasswordHelpers } from 'src/helpers/util';
 import aqp from 'api-query-params';
-import { CodeAuthDto, CreateAuthDto } from 'src/auth/dto/create-auth.dto';
+import {
+  ChangePasswordDto,
+  CodeAuthDto,
+  CreateAuthDto,
+} from 'src/auth/dto/create-auth.dto';
 import { v4 as uuidv4 } from 'uuid';
 import * as dayjs from 'dayjs';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -184,5 +188,58 @@ export class UsersService {
       },
     });
     return { _id: user._id };
+  }
+
+  async handleRetryPassword(email: string) {
+    const user = await this.userModel.findOne({ email });
+    const codeId = uuidv4();
+    if (!user) {
+      throw new BadRequestException('Email không tồn tại');
+    }
+
+    await user.updateOne({
+      codeId: codeId,
+      codeExpried: dayjs().add(5, 'minute'),
+    });
+
+    //send email
+    await this.mailerService.sendMail({
+      // to: user.email, // list of receivers
+      to: 'vu.hieu22102001@gmail.com', //mail to debug code email
+      subject: 'Change your password account ✔', // Subject line
+      text: 'welcome', // plaintext body
+      template: 'register.hbs',
+      context: {
+        name: user.name ?? user.email,
+        activationCode: codeId,
+      },
+    });
+    return { _id: user._id, email: user.email };
+  }
+
+  async handleChangePassword(data: ChangePasswordDto) {
+    if (data.confirmPassword !== data.password) {
+      throw new BadRequestException(
+        'Mật khẩu/Xác nhận mật khẩu không chính xác',
+      );
+    }
+
+    const user = await this.userModel.findOne({ email: data.email });
+
+    if (!user) {
+      throw new BadRequestException('Tài khoản không tồn tại');
+    }
+
+    // check expried code
+    const isBeforeCheck = dayjs().isBefore(dayjs(user.codeExpried));
+
+    if (isBeforeCheck) {
+      // valid => update password
+      const newPassword = await hashPasswordHelpers(data.password);
+      await user.updateOne({ password: newPassword });
+      return isBeforeCheck;
+    } else {
+      throw new BadRequestException('mã code đã hết hạn');
+    }
   }
 }
